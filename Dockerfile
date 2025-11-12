@@ -20,11 +20,12 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/*
 
 # Python paketlerini yükle (ai-service için)
+# --break-system-packages flag'i Python 3.11+ için gerekli (externally-managed-environment hatası için)
 COPY backend/ai-service/requirements.txt /tmp/requirements.txt
 RUN if [ -s /tmp/requirements.txt ]; then \
-        pip3 install --no-cache-dir -r /tmp/requirements.txt; \
+        pip3 install --no-cache-dir --break-system-packages -r /tmp/requirements.txt; \
     else \
-        pip3 install --no-cache-dir gradio_client; \
+        pip3 install --no-cache-dir --break-system-packages gradio_client; \
     fi
 
 # AI servis dosyalarını kopyala
