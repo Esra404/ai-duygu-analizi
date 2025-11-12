@@ -11,11 +11,12 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        // Ngrok URL'leri, Render URL'leri ve localhost için esnek CORS
+        // Ngrok URL'leri, Render URL'leri, Vercel URL'leri ve localhost için esnek CORS
         policy.SetIsOriginAllowed(origin => 
             origin.Contains("ngrok-free.app") || 
             origin.Contains("ngrok.io") ||
             origin.Contains("onrender.com") ||
+            origin.Contains("vercel.app") ||
             origin.StartsWith("http://localhost") ||
             origin.StartsWith("https://localhost")
         )
