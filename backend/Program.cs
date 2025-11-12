@@ -517,22 +517,33 @@ async Task<string> CallAIService(string message)
         var error = await errorTask;
         await exitTask;
 
+        // Python hatalarını logla
         if (!string.IsNullOrEmpty(error))
         {
+            Console.WriteLine($"⚠️ Python Error Output: {error}");
             // Gradio client uyarılarını filtrele ama diğer hataları göster
-            if (!error.Contains("gradio_client") && !error.Contains("WARNING"))
+            if (!error.Contains("gradio_client") && !error.Contains("WARNING") && !error.Contains("UserWarning"))
             {
-                Console.WriteLine($"Python Error: {error}");
+                Console.WriteLine($"❌ Python Error: {error}");
             }
         }
 
         var response = output.Trim();
-        Console.WriteLine($"Python çıktısı (ilk 200 karakter): {response.Substring(0, Math.Min(200, response.Length))}");
         
-        if (string.IsNullOrEmpty(response))
+        if (!string.IsNullOrEmpty(response))
+        {
+            Console.WriteLine($"✅ Python çıktısı (ilk 200 karakter): {response.Substring(0, Math.Min(200, response.Length))}");
+        }
+        else
         {
             Console.WriteLine("❌ Python'dan boş yanıt alındı!");
-            return "AI servisinden yanıt alınamadı.";
+            Console.WriteLine($"Python Exit Code: {process.ExitCode}");
+            if (!string.IsNullOrEmpty(error))
+            {
+                Console.WriteLine($"Python Error: {error}");
+                return $"AI servisi hatası: {error.Substring(0, Math.Min(200, error.Length))}";
+            }
+            return "AI servisinden yanıt alınamadı. Python process boş yanıt döndü.";
         }
         
         // JSON response'u parse et
