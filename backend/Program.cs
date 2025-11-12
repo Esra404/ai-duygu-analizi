@@ -45,9 +45,46 @@ app.MapGet("/", () => Results.Ok(new
     {
         chat = "POST /api/chat",
         history = "GET /api/chat/history?username={username}",
-        users = "GET /api/users"
+        users = "GET /api/users",
+        test = "GET /api/test-ai"
     }
 }));
+
+// AI servisi test endpoint'i
+app.MapGet("/api/test-ai", async () =>
+{
+    try
+    {
+        var testMessage = "test";
+        var currentDir = Directory.GetCurrentDirectory();
+        var pythonPaths = new[]
+        {
+            Path.Combine("/app", "ai-service", "app.py"),
+            Path.Combine(currentDir, "ai-service", "app.py"),
+        };
+        
+        var pythonFile = pythonPaths.FirstOrDefault(p => File.Exists(p));
+        var pythonExe = "/usr/bin/python3";
+        var hfToken = Environment.GetEnvironmentVariable("HUGGINGFACE_TOKEN");
+        
+        return Results.Ok(new
+        {
+            currentDirectory = currentDir,
+            pythonFileExists = pythonFile != null && File.Exists(pythonFile),
+            pythonFile = pythonFile,
+            pythonExe = pythonExe,
+            pythonExeExists = File.Exists(pythonExe),
+            hfTokenExists = !string.IsNullOrEmpty(hfToken),
+            hfTokenLength = hfToken?.Length ?? 0,
+            aiServicePath = "/app/ai-service",
+            aiServiceExists = Directory.Exists("/app/ai-service")
+        });
+    }
+    catch (Exception ex)
+    {
+        return Results.Ok(new { error = ex.Message, stackTrace = ex.StackTrace });
+    }
+});
 
 // API Endpoints
 app.MapPost("/api/chat", async (HttpContext context) =>
@@ -63,12 +100,30 @@ app.MapPost("/api/chat", async (HttpContext context) =>
         // Python AI servisini çağır
         Console.WriteLine($"AI servisi çağrılıyor: {request.Message}");
         var aiResponse = await CallAIService(request.Message);
-        Console.WriteLine($"AI servisi yanıtı: {aiResponse?.Substring(0, Math.Min(100, aiResponse?.Length ?? 0))}...");
         
-        if (string.IsNullOrEmpty(aiResponse) || aiResponse.StartsWith("AI servisi hatası") || aiResponse.StartsWith("Hata:") || aiResponse.Contains("bulunamadı"))
+        if (aiResponse != null && aiResponse.Length > 0)
+        {
+            Console.WriteLine($"AI servisi yanıtı (ilk 200 karakter): {aiResponse.Substring(0, Math.Min(200, aiResponse.Length))}...");
+        }
+        else
+        {
+            Console.WriteLine($"❌ AI servisi boş yanıt döndü!");
+        }
+        
+        if (string.IsNullOrEmpty(aiResponse) || 
+            aiResponse.StartsWith("AI servisi hatası") || 
+            aiResponse.StartsWith("Hata:") || 
+            aiResponse.Contains("bulunamadı") ||
+            aiResponse.Contains("Python") ||
+            aiResponse.Contains("timeout") ||
+            aiResponse.Contains("zaman aşımı"))
         {
             Console.WriteLine($"❌ AI servisi hatası: {aiResponse}");
-            return Results.BadRequest(new { error = $"AI servisi hatası: {aiResponse}" });
+            // Detaylı hata mesajı döndür
+            return Results.BadRequest(new { 
+                error = $"AI servisi hatası: {aiResponse}",
+                details = "Python servisi çalışmıyor olabilir. Render loglarını kontrol edin."
+            });
         }
 
         // AI cevabını Türkçe'ye çevir
