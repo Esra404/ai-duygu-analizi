@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Veritabanı Görüntüleyici</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #667eea;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+        .users-list {
+            margin: 20px 0;
+        }
+        .user-item {
+            display: inline-block;
+            background: #e3f2fd;
+            padding: 8px 15px;
+            margin: 5px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        .messages {
+            margin-top: 20px;
+        }
+        .message {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 12px;
+            color: #666;
+        }
+        .message-user {
+            font-weight: bold;
+            color: #667eea;
+        }
+        .message-time {
+            color: #999;
+        }
+        .message-text {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+        .ai-response {
+            margin-top: 10px;
+            padding: 10px;
+            background: #fff3cd;
+            border-radius: 5px;
+            font-style: italic;
+        }
+        .ai-label {
+            font-weight: bold;
+            color: #856404;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #764ba2;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗄️ Veritabanı Görüntüleyici</h1>
+        <button onclick="loadData()">🔄 Yenile</button>
+        <button onclick="clearData()">🗑️ Verileri Temizle</button>
+        
+        <div id="stats" class="stats"></div>
+        <div id="users" class="users-list"></div>
+        <div id="messages" class="messages"></div>
+        <div id="loading" class="loading">Yükleniyor...</div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+
+        async function loadData() {
+            document.getElementById('loading').style.display = 'block';
+            
+            try {
+                // Kullanıcıları getir
+                const usersResponse = await fetch(`${API_BASE}/api/users`);
+                const users = await usersResponse.json();
+                
+                // Mesajları getir
+                const messagesResponse = await fetch(`${API_BASE}/api/chat/history`);
+                const messages = await messagesResponse.json();
+                
+                // İstatistikleri göster
+                document.getElementById('stats').innerHTML = `
+                    <div class="stat-box">
+                        <div class="stat-number">${messages.length}</div>
+                        <div class="stat-label">Toplam Mesaj</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">${users.length}</div>
+                        <div class="stat-label">Kullanıcı Sayısı</div>
+                    </div>
+                `;
+                
+                // Kullanıcıları göster
+                document.getElementById('users').innerHTML = `
+                    <h3>👥 Kullanıcılar:</h3>
+                    ${users.map(user => `<span class="user-item">${user}</span>`).join('')}
+                `;
+                
+                // Mesajları göster
+                document.getElementById('messages').innerHTML = `
+                    <h3>💬 Mesajlar:</h3>
+                    ${messages.map(msg => `
+                        <div class="message">
+                            <div class="message-header">
+                                <span class="message-user">@${msg.username}</span>
+                                <span class="message-time">${new Date(msg.timestamp).toLocaleString('tr-TR')}</span>
+                            </div>
+                            <div class="message-text">${msg.message}</div>
+                            <div class="ai-response">
+                                <span class="ai-label">🤖 AI Cevabı:</span>
+                                <div>${msg.response}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                `;
+                
+                document.getElementById('loading').style.display = 'none';
+            } catch (error) {
+                document.getElementById('loading').innerHTML = `
+                    <div style="color: red;">
+                        ❌ Hata: ${error.message}<br>
+                        Backend'in çalıştığından emin olun (http://localhost:5000)
+                    </div>
+                `;
+            }
+        }
+
+        async function clearData() {
+            if (!confirm('Tüm verileri silmek istediğinizden emin misiniz?')) {
+                return;
+            }
+            
+            // Backend'de silme endpoint'i yoksa, bu fonksiyon çalışmayacak
+            alert('Bu özellik backend API\'de henüz yok. Veritabanı dosyasını manuel olarak silebilirsiniz: backend/message.db');
+        }
+
+        // Sayfa yüklendiğinde otomatik yükle
+        window.onload = loadData;
+        
+        // Her 5 saniyede bir otomatik yenile
+        setInterval(loadData, 5000);
+    </script>
+</body>
+</html>
+
