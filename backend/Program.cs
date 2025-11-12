@@ -183,10 +183,13 @@ app.MapGet("/api/users", () =>
     try
     {
         var users = new HashSet<string>();
+        var messageCount = 0;
 
         using (var connection = new SqliteConnection($"Data Source={dbPath}"))
         {
             connection.Open();
+            
+            // Kullanıcıları getir
             var selectCmd = connection.CreateCommand();
             selectCmd.CommandText = "SELECT DISTINCT username FROM Messages;";
 
@@ -197,9 +200,21 @@ app.MapGet("/api/users", () =>
                     users.Add(reader.GetString(0));
                 }
             }
+            
+            // Toplam mesaj sayısını getir
+            var countCmd = connection.CreateCommand();
+            countCmd.CommandText = "SELECT COUNT(*) FROM Messages;";
+            var countResult = countCmd.ExecuteScalar();
+            messageCount = countResult != null ? Convert.ToInt32(countResult) : 0;
         }
 
-        return Results.Ok(users.ToList());
+        return Results.Ok(new
+        {
+            users = users.ToList(),
+            totalMessages = messageCount,
+            databasePath = dbPath,
+            databaseExists = File.Exists(dbPath)
+        });
     }
     catch (Exception ex)
     {
