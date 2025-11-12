@@ -525,31 +525,46 @@ async Task<string> CallAIService(string message)
         var error = await errorTask;
         await exitTask;
 
+        // Python çıktılarını detaylı logla
+        Console.WriteLine($"[AI SERVICE] Python Exit Code: {process.ExitCode}");
+        Console.WriteLine($"[AI SERVICE] Python Output Length: {output?.Length ?? 0}");
+        Console.WriteLine($"[AI SERVICE] Python Error Length: {error?.Length ?? 0}");
+        
         // Python hatalarını logla
         if (!string.IsNullOrEmpty(error))
         {
-            Console.WriteLine($"⚠️ Python Error Output: {error}");
+            Console.WriteLine($"[AI SERVICE] ⚠️ Python Error Output (tam): {error}");
             // Gradio client uyarılarını filtrele ama diğer hataları göster
             if (!error.Contains("gradio_client") && !error.Contains("WARNING") && !error.Contains("UserWarning"))
             {
-                Console.WriteLine($"❌ Python Error: {error}");
+                Console.WriteLine($"[AI SERVICE] ❌ Python Error: {error}");
             }
-        }
-
-        var response = output.Trim();
-        
-        if (!string.IsNullOrEmpty(response))
-        {
-            Console.WriteLine($"✅ Python çıktısı (ilk 200 karakter): {response.Substring(0, Math.Min(200, response.Length))}");
         }
         else
         {
-            Console.WriteLine("❌ Python'dan boş yanıt alındı!");
-            Console.WriteLine($"Python Exit Code: {process.ExitCode}");
+            Console.WriteLine($"[AI SERVICE] Python Error Output: (boş)");
+        }
+
+        var response = output?.Trim() ?? "";
+        
+        if (!string.IsNullOrEmpty(response))
+        {
+            Console.WriteLine($"[AI SERVICE] ✅ Python çıktısı (ilk 500 karakter): {response.Substring(0, Math.Min(500, response.Length))}");
+        }
+        else
+        {
+            Console.WriteLine($"[AI SERVICE] ❌ Python'dan boş yanıt alındı!");
+            Console.WriteLine($"[AI SERVICE] Python Exit Code: {process.ExitCode}");
             if (!string.IsNullOrEmpty(error))
             {
-                Console.WriteLine($"Python Error: {error}");
-                return $"AI servisi hatası: {error.Substring(0, Math.Min(200, error.Length))}";
+                // Error varsa onu döndür
+                var errorMsg = error.Length > 500 ? error.Substring(0, 500) : error;
+                Console.WriteLine($"[AI SERVICE] Python Error (döndürülüyor): {errorMsg}");
+                return $"AI servisi hatası: {errorMsg}";
+            }
+            else if (process.ExitCode != 0)
+            {
+                return $"AI servisi hatası: Python process hata kodu {process.ExitCode} ile çıktı. Çıktı yok.";
             }
             return "AI servisinden yanıt alınamadı. Python process boş yanıt döndü.";
         }
