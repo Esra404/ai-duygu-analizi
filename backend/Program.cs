@@ -34,6 +34,20 @@ var dbPath = Path.Combine(Directory.GetCurrentDirectory(), "message.db");
 // Veritabanını başlat
 InitializeDatabase(dbPath);
 
+// Root path için health check endpoint
+app.MapGet("/", () => Results.Ok(new
+{
+    status = "ok",
+    message = "AI Duygu Analizi Chat API",
+    version = "1.0.0",
+    endpoints = new
+    {
+        chat = "POST /api/chat",
+        history = "GET /api/chat/history?username={username}",
+        users = "GET /api/users"
+    }
+}));
+
 // API Endpoints
 app.MapPost("/api/chat", async (HttpContext context) =>
 {
