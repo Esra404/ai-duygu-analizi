@@ -6,14 +6,20 @@ using Microsoft.AspNetCore.Http;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// CORS ayarları - Frontend'den istekleri kabul et
+// CORS ayarları - Frontend'den istekleri kabul et (localhost + ngrok)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowReactApp", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5173")
-              .AllowAnyHeader()
-              .AllowAnyMethod();
+        // Ngrok URL'leri ve localhost için esnek CORS
+        policy.SetIsOriginAllowed(origin => 
+            origin.Contains("ngrok-free.app") || 
+            origin.Contains("ngrok.io") ||
+            origin.StartsWith("http://localhost") ||
+            origin.StartsWith("https://localhost")
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod();
     });
 });
 
@@ -189,9 +195,21 @@ app.MapGet("/api/users", () =>
     }
 });
 
-// Port ayarı - varsayılan 5000, kullanılıyorsa 5001
-app.Urls.Add("http://localhost:5000");
-Console.WriteLine("Backend başlatılıyor: http://localhost:5000");
+// Port ayarı - ASPNETCORE_URLS env var varsa onu kullan, yoksa PORT env var'ından al
+// Docker/Render için ASPNETCORE_URLS genelde ayarlanır
+var aspnetcoreUrls = Environment.GetEnvironmentVariable("ASPNETCORE_URLS");
+if (string.IsNullOrEmpty(aspnetcoreUrls))
+{
+    // ASPNETCORE_URLS yoksa manuel port ayarla
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+    var url = $"http://0.0.0.0:{port}";
+    app.Urls.Add(url);
+    Console.WriteLine($"Backend başlatılıyor: {url}");
+}
+else
+{
+    Console.WriteLine($"Backend başlatılıyor: {aspnetcoreUrls}");
+}
 
 app.Run();
 
@@ -263,11 +281,16 @@ async Task<string> CallAIService(string message)
     var currentDir = Directory.GetCurrentDirectory();
     Console.WriteLine($"Mevcut dizin: {currentDir}");
     
-    // Farklı yol kombinasyonlarını dene
+    // Farklı yol kombinasyonlarını dene (Windows ve Linux uyumlu)
     var possiblePaths = new[]
     {
+        // Docker/Linux yolu
+        Path.Combine("/app", "ai-service", "app.py"),
+        // Göreli yollar
+        Path.Combine(currentDir, "ai-service", "app.py"),
         Path.Combine(currentDir, "..", "ai-service", "app.py"),
         Path.Combine(currentDir, "..", "..", "ai-service", "app.py"),
+        Path.GetFullPath(Path.Combine(currentDir, "ai-service", "app.py")),
         Path.GetFullPath(Path.Combine(currentDir, "..", "ai-service", "app.py")),
     };
     
@@ -292,21 +315,28 @@ async Task<string> CallAIService(string message)
     
     Console.WriteLine($"✅ Python script bulundu: {pythonFile}");
     
-    // Python interpreter yolu - Windows için varsayılan yol
+    // Python interpreter yolu - Environment variable'dan veya otomatik bul
     var pythonExe = Environment.GetEnvironmentVariable("PYTHON_EXE");
     
     if (string.IsNullOrEmpty(pythonExe) || !File.Exists(pythonExe))
     {
-        // Alternatif Python yollarını dene
+        // Alternatif Python yollarını dene (Windows ve Linux uyumlu)
         var possiblePythonPaths = new[]
         {
+            // Environment variable
+            Environment.GetEnvironmentVariable("PYTHON_EXE"),
+            // Linux/Docker yolları
+            "/usr/bin/python3",
+            "/usr/local/bin/python3",
+            "python3",
+            // Windows yolları
             @"C:\Users\codee\AppData\Local\Programs\Python\Python313\python.exe",
             @"C:\Users\codee\AppData\Local\Programs\Python\Python312\python.exe",
             @"C:\Python313\python.exe",
             @"C:\Python312\python.exe",
             @"python.exe",
             "python"
-        };
+        }.Where(p => !string.IsNullOrEmpty(p)).ToArray();
 
         foreach (var path in possiblePythonPaths)
         {
