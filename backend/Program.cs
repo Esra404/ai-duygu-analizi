@@ -67,6 +67,50 @@ app.MapGet("/api/test-ai", async () =>
         var pythonExe = "/usr/bin/python3";
         var hfToken = Environment.GetEnvironmentVariable("HUGGINGFACE_TOKEN");
         
+        // Python script'i manuel test et
+        string? pythonTestResult = null;
+        string? pythonTestError = null;
+        int pythonExitCode = -1;
+        
+        if (pythonFile != null && File.Exists(pythonFile) && File.Exists(pythonExe))
+        {
+            try
+            {
+                var start = new ProcessStartInfo
+                {
+                    FileName = pythonExe,
+                    Arguments = $"\"{pythonFile}\" \"test message\"",
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    StandardOutputEncoding = Encoding.UTF8,
+                    StandardErrorEncoding = Encoding.UTF8,
+                    CreateNoWindow = true
+                };
+                start.Environment["PYTHONUTF8"] = "1";
+                if (!string.IsNullOrEmpty(hfToken))
+                {
+                    start.Environment["HUGGINGFACE_TOKEN"] = hfToken;
+                }
+                
+                using var process = Process.Start(start);
+                if (process != null)
+                {
+                    var output = await process.StandardOutput.ReadToEndAsync();
+                    var error = await process.StandardError.ReadToEndAsync();
+                    await process.WaitForExitAsync();
+                    
+                    pythonTestResult = output.Trim();
+                    pythonTestError = error.Trim();
+                    pythonExitCode = process.ExitCode;
+                }
+            }
+            catch (Exception ex)
+            {
+                pythonTestError = ex.Message;
+            }
+        }
+        
         return Results.Ok(new
         {
             currentDirectory = currentDir,
@@ -77,7 +121,15 @@ app.MapGet("/api/test-ai", async () =>
             hfTokenExists = !string.IsNullOrEmpty(hfToken),
             hfTokenLength = hfToken?.Length ?? 0,
             aiServicePath = "/app/ai-service",
-            aiServiceExists = Directory.Exists("/app/ai-service")
+            aiServiceExists = Directory.Exists("/app/ai-service"),
+            pythonTest = new
+            {
+                exitCode = pythonExitCode,
+                output = pythonTestResult,
+                error = pythonTestError,
+                outputLength = pythonTestResult?.Length ?? 0,
+                errorLength = pythonTestError?.Length ?? 0
+            }
         });
     }
     catch (Exception ex)
