@@ -364,7 +364,8 @@ async Task<string> CallAIService(string message)
     // Python script dosyasının yolu - proje içindeki ai-service/app.py
     // Backend klasöründen çalıştığında bir üst dizine çık
     var currentDir = Directory.GetCurrentDirectory();
-    Console.WriteLine($"Mevcut dizin: {currentDir}");
+    Console.WriteLine($"[AI SERVICE] Mevcut dizin: {currentDir}");
+    Console.WriteLine($"[AI SERVICE] AI servisi çağrılıyor, mesaj: {message.Substring(0, Math.Min(50, message.Length))}");
     
     // Farklı yol kombinasyonlarını dene (Windows ve Linux uyumlu)
     var possiblePaths = new[]
@@ -394,11 +395,18 @@ async Task<string> CallAIService(string message)
     if (pythonFile == null || !File.Exists(pythonFile))
     {
         var errorMsg = $"Python script bulunamadı. Denenen yollar:\n{string.Join("\n", possiblePaths.Select(p => Path.GetFullPath(p)))}";
-        Console.WriteLine($"❌ {errorMsg}");
+        Console.WriteLine($"[AI SERVICE] ❌ {errorMsg}");
+        Console.WriteLine($"[AI SERVICE] Tüm yollar kontrol edildi:");
+        foreach (var path in possiblePaths)
+        {
+            var fullPath = Path.GetFullPath(path);
+            var exists = File.Exists(fullPath);
+            Console.WriteLine($"[AI SERVICE]   - {fullPath} => {(exists ? "VAR" : "YOK")}");
+        }
         return $"Python script dosyası bulunamadı. Mevcut dizin: {currentDir}";
     }
     
-    Console.WriteLine($"✅ Python script bulundu: {pythonFile}");
+    Console.WriteLine($"[AI SERVICE] ✅ Python script bulundu: {pythonFile}");
     
     // Python interpreter yolu - Environment variable'dan veya otomatik bul
     var pythonExe = Environment.GetEnvironmentVariable("PYTHON_EXE");
