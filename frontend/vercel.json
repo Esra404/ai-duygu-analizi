@@ -1,4 +1,7 @@
 {
+  "env": {
+    "VITE_API_URL": "https://ai-duygu-analizi-7.onrender.com"
+  },
   "rewrites": [
     {
       "source": "/(.*)",
