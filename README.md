@@ -19,50 +19,14 @@ AI-Duygu-Analizi-Chat-App/
 ├── ai-service/       # Python AI servisi (Hugging Face)
 └── mobile/          # Mobile uygulama (gelecekte)
 ```
+<img width="1101" height="918" alt="image" src="https://github.com/user-attachments/assets/c10c753e-af34-4af1-b812-56d6f1d3b55f" />
+<img width="1185" height="937" alt="image" src="https://github.com/user-attachments/assets/d6952242-3991-428a-ac73-449585eafd74" />
+<img width="673" height="859" alt="image" src="https://github.com/user-attachments/assets/dd81d3af-be31-4f16-b1a5-542c475876bf" />
+<img width="910" height="753" alt="image" src="https://github.com/user-attachments/assets/bda7d411-cd69-435f-97a5-d3c65dae1fa7" />
 
-## 🛠️ Kurulum
 
-### Backend (C#)
 
-1. Backend klasörüne gidin:
-```bash
-cd backend
-```
 
-2. Projeyi çalıştırın:
-```bash
-dotnet run
-```
-
-Backend `http://localhost:5000` adresinde çalışacaktır.
-
-### Frontend (React)
-
-1. Frontend klasörüne gidin:
-```bash
-cd frontend
-```
-
-2. Bağımlılıkları yükleyin:
-```bash
-npm install
-```
-
-3. Geliştirme sunucusunu başlatın:
-```bash
-npm run dev
-```
-
-Frontend `http://localhost:3000` adresinde açılacaktır.
-
-### AI Service (Python)
-
-AI servisi backend tarafından otomatik olarak çağrılır. Python'un yüklü olduğundan emin olun.
-
-Gerekli Python paketleri:
-```bash
-pip install gradio_client
-```
 
 ## 🎯 Kullanım
 
