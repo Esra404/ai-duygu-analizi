@@ -81,7 +81,7 @@ function App() {
       const response = await fetch(`${API_BASE_URL}/api/users`)
       if (response.ok) {
         const data = await response.json()
-        setUsers(data)
+        setUsers(Array.isArray(data) ? data : (data.users || []))
       }
     } catch (error) {
       console.error('Kullanıcılar yüklenirken hata:', error)
