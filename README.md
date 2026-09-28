@@ -56,3 +56,7 @@ AI-Duygu-Analizi-Chat-App/
 - Kullanıcı bazlı mesaj filtreleme
 - AI entegrasyonu ile duygu analizi
 
+## 🎬 Demo
+
+![AI Duygu Analizi Demo](docs/demo.gif)
+
